@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Dashboard administrateur — Système de votes sécurisés" />
+    <title>Dashboard — Votes Sécurisés</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="css/style.css" />
+    <style>
+        /* Dashboard layout */
+        .dashboard {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        .dash-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .dash-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .dash-header h1 {
+            font-size: 20px;
+        }
+
+        .user-info {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .user-info strong {
+            color: var(--accent);
+        }
+
+        .btn-logout {
+            padding: 8px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: #ef4444;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-logout:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* Stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+
+        .stat-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--accent);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Sections */
+        .section {
+            margin-bottom: 24px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .section-header h2 {
+            font-size: 18px;
+        }
+
+        .section-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        /* Tables */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 2px solid var(--border);
+            color: var(--muted);
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .data-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .badge {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-admin {
+            background: rgba(99, 102, 241, 0.15);
+            color: #818cf8;
+        }
+
+        .badge-agent {
+            background: rgba(34, 197, 94, 0.15);
+            color: #22c55e;
+        }
+
+        .badge-auditor {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+        }
+
+        /* Aggregate */
+        .agg-form {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .agg-form input {
+            flex: 1;
+            min-width: 160px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        .agg-form input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+        }
+
+        .btn-small {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .btn-small:active {
+            transform: scale(0.97);
+        }
+
+        .agg-result {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            display: none;
+        }
+
+        .agg-result .big-number {
+            font-size: 48px;
+            font-weight: 800;
+            text-align: center;
+            color: var(--accent);
+            margin: 8px 0;
+        }
+
+        .agg-result .meta-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--muted);
+            padding: 4px 0;
+        }
+
+        /* Question form */
+        .q-form {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .q-form input {
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        .q-form input:first-child {
+            width: 120px;
+        }
+
+        .q-form input:nth-child(2) {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        /* Hash chain */
+        .chain-result {
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .chain-ok {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .chain-fail {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        /* Nav tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .nav-tab {
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--muted);
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-tab.active {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--accent);
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            font-size: 18px;
+        }
+
+        .btn-close {
+            background: transparent;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--muted);
+        }
+
+        .modal .form-group {
+            margin-bottom: 16px;
+        }
+
+        .modal .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .modal .form-group input,
+        .modal .form-group select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        .modal .form-group input[type="checkbox"] {
+            width: auto;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .modal .form-group .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+        }
+
+        /* QR Generator */
+        #qrCodeDisplay {
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            display: inline-block;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+
+<body>
+    <div class="dashboard">
+        <!-- Header -->
+        <div class="dash-header">
+            <div class="dash-header-left">
+                <span style="font-size:28px">📊</span>
+                <div>
+                    <h1>Dashboard</h1>
+                    <div class="user-info">Connecté : <strong id="displayUser">-</strong> (<span
+                            id="displayRole">-</span>)</div>
+                </div>
+            </div>
+            <button class="btn-logout" onclick="logout()">🚪 Déconnexion</button>
+        </div>
+
+        <!-- Stats -->
+        <div id="statsGrid" class="stats-grid">
+            <div class="stat-card"><span class="stat-icon">🗳️</span>
+                <div class="stat-value" id="statVotes">-</div>
+                <div class="stat-label">Votes</div>
+            </div>
+            <div class="stat-card"><span class="stat-icon">📋</span>
+                <div class="stat-value" id="statQuestions">-</div>
+                <div class="stat-label">Questions</div>
+            </div>
+            <div class="stat-card"><span class="stat-icon">👥</span>
+                <div class="stat-value" id="statParticipants">-</div>
+                <div class="stat-label">Participants</div>
+            </div>
+            <div class="stat-card"><span class="stat-icon">📸</span>
+                <div class="stat-value" id="statPhotos">-</div>
+                <div class="stat-label">Photos</div>
+            </div>
+            <div class="stat-card"><span class="stat-icon">📝</span>
+                <div class="stat-value" id="statAudit">-</div>
+                <div class="stat-label">Audit logs</div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('results')">📊 Résultats</button>
+            <button class="nav-tab" onclick="showTab('questions')">📋 Questions</button>
+            <button class="nav-tab" onclick="showTab('users')">👥 Utilisateurs</button>
+            <button class="nav-tab" onclick="showTab('audit')">🔍 Audit</button>
+            <button class="nav-tab" onclick="showTab('qr')">🔲 Générateur QR</button>
+        </div>
+
+        <!-- Tab: Results -->
+        <div id="tab-results" class="tab-content active">
+            <div class="section-card">
+                <h2 style="margin-bottom:16px">📊 Agrégation homomorphe</h2>
+                <p style="color:var(--muted); font-size:13px; margin-bottom:16px;">
+                    Calculez le total des votes sans déchiffrer les réponses individuelles.
+                </p>
+                <div class="agg-form">
+                    <input type="text" id="aggQuestionId" placeholder="ID question (ex: Q-001)" />
+                    <button class="btn-small" onclick="aggregate()">🔐 Agréger</button>
+                </div>
+                <div id="aggResult" class="agg-result">
+                    <div class="meta-row"><span>Question :</span><span id="aggQ">-</span></div>
+                    <div class="big-number" id="aggTotal">-</div>
+                    <div style="text-align:center; color:var(--muted); font-size:13px; margin-bottom:12px;">
+                        votes "Oui" (déchiffré homomorphiquement)
+                    </div>
+                    <div class="meta-row"><span>Total bulletins :</span><span id="aggCount">-</span></div>
+                    <div class="meta-row"><span>Votes "Non" :</span><span id="aggNo">-</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Questions -->
+        <div id="tab-questions" class="tab-content">
+            <div class="section-card">
+                <h2 style="margin-bottom:16px">📋 Gestion des questions</h2>
+                <div class="q-form" id="questionFormArea">
+                    <input type="text" id="newQId" placeholder="ID (ex: Q-004)" />
+                    <input type="text" id="newQLabel" placeholder="Libellé de la question" />
+                    <button class="btn-small" onclick="addQuestion()">➕ Ajouter</button>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Libellé</th>
+                            <th>Créé par</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="questionsBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab: Users -->
+        <div id="tab-users" class="tab-content">
+            <div class="section-card">
+                <h2 style="margin-bottom:16px">👥 Utilisateurs</h2>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nom d'utilisateur</th>
+                            <th>Rôle</th>
+                            <th>Nom complet</th>
+                            <th>Actif</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab: Audit -->
+        <div id="tab-audit" class="tab-content">
+            <div class="section-card">
+                <div class="section-header" style="margin-bottom:16px">
+                    <h2>🔍 Audit</h2>
+                    <button class="btn-small" onclick="verifyChain()">🔗 Vérifier hash-chain</button>
+                </div>
+                <div id="chainResult" style="margin-bottom:16px; display:none;"></div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Événement</th>
+                            <th>Payload Hash</th>
+                            <th>Prev Hash</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab: QR Generator -->
+        <div id="tab-qr" class="tab-content">
+            <div class="section-card" style="text-align:center;">
+                <h2 style="margin-bottom:16px; text-align:left;">🔲 Générateur de QR Codes</h2>
+                <p style="color:var(--muted); font-size:13px; text-align:left; margin-bottom:20px;">
+                    L'application de vote nécessite de flasher des QR Codes pour les identifiants (Questions,
+                    Participants, ...).
+                    Utilisez cet outil pour les générer et les imprimer facilement.
+                </p>
+
+                <div
+                    style="display:inline-flex; flex-direction:column; align-items:center; gap:16px; width:100%; max-width:400px; margin:0 auto;">
+                    <select id="qrPrefix"
+                        style="width:100%; padding:12px; border-radius:10px; border:1px solid var(--border); background:var(--bg); font-size:14px;">
+                        <option value="">Aucun préfixe (Texte brut)</option>
+                        <option value="ID Question: ">Question (ex: Q-001)</option>
+                        <option value="ID Participant: ">Participant (ex: P-001)</option>
+                        <option value="ID Agent: ">Agent (ex: agent_1)</option>
+                    </select>
+
+                    <input type="text" id="qrInputValue" placeholder="Valeur (ex: Q-001)"
+                        style="width:100%; padding:12px; border-radius:10px; border:1px solid var(--border); background:var(--bg); font-size:14px;" />
+
+                    <button class="btn-small" style="width:100%; padding:14px;" onclick="generateQCode()">🔲 Générer le
+                        QR Code</button>
+
+                    <div id="qrCodeDisplay">
+                        <div style="color:var(--muted); font-size:13px; padding:20px;">Générez votre premier QR code
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="editUserModal" class="modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Éditer l'utilisateur</h2>
+                <button class="btn-close" onclick="closeEditModal()">✖</button>
+            </div>
+            <div id="editUserError" style="color:#ef4444; font-size:13px; margin-bottom:12px; display:none;"></div>
+            <input type="hidden" id="editUserId" />
+            <div class="form-group">
+                <label>Nom d'utilisateur</label>
+                <input type="text" id="editUsername" disabled />
+            </div>
+            <div class="form-group">
+                <label>Nom complet</label>
+                <input type="text" id="editFullName" />
+            </div>
+            <div class="form-group">
+                <label>Rôle</label>
+                <select id="editRole">
+                    <option value="agent">Agent</option>
+                    <option value="admin">Admin</option>
+                    <option value="auditor">Auditor</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="editActive" />
+                    <label style="margin:0">Compte actif</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Nouveau mot de passe (laisser vide pour ne pas modifier)</label>
+                <input type="password" id="editPassword" placeholder="••••••••" />
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:24px;">
+                <button class="btn-small"
+                    style="background:transparent; border:1px solid var(--border); color:var(--text);"
+                    onclick="closeEditModal()">Annuler</button>
+                <button class="btn-small" onclick="saveUser()">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.port === '3000' ? 'http://localhost:8080' : window.location.origin;
+        const token = localStorage.getItem('sv_token');
+        const role = localStorage.getItem('sv_role');
+        const username = localStorage.getItem('sv_username');
+
+        // Auth check
+        if (!token) { window.location.href = '/login.html'; }
+
+        document.getElementById('displayUser').textContent = username || '-';
+        document.getElementById('displayRole').textContent = role || '-';
+
+        // Hide admin-only elements for non-admins
+        if (role !== 'admin') {
+            document.getElementById('questionFormArea').style.display = 'none';
+        }
+
+        function authHeaders() {
+            return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+        }
+
+        async function apiFetch(url, options = {}) {
+            options.headers = { ...authHeaders(), ...options.headers };
+            const resp = await fetch(`${API_BASE}${url}`, options);
+            if (resp.status === 401) { logout(); return null; }
+            return resp;
+        }
+
+        function logout() {
+            localStorage.removeItem('sv_token');
+            localStorage.removeItem('sv_role');
+            localStorage.removeItem('sv_username');
+            window.location.href = '/login.html';
+        }
+
+        // Tab switching
+        function showTab(name) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+            document.getElementById(`tab-${name}`).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Load stats
+        async function loadStats() {
+            try {
+                const resp = await apiFetch('/admin/stats');
+                if (!resp || !resp.ok) return;
+                const data = await resp.json();
+                document.getElementById('statVotes').textContent = data.total_votes;
+                document.getElementById('statQuestions').textContent = data.unique_questions;
+                document.getElementById('statParticipants').textContent = data.unique_participants;
+                document.getElementById('statPhotos').textContent = data.total_photos;
+                document.getElementById('statAudit').textContent = data.total_audit_entries;
+            } catch { }
+        }
+
+        // Load users
+        async function loadUsers() {
+            try {
+                const resp = await apiFetch('/admin/users');
+                if (!resp || !resp.ok) return;
+                const users = await resp.json();
+                document.getElementById('usersBody').innerHTML = users.map(u => `
+                    <tr>
+                        <td>${u.id}</td>
+                        <td>${u.username}</td>
+                        <td><span class="badge badge-${u.role}">${u.role}</span></td>
+                        <td>${u.full_name || '-'}</td>
+                        <td>${u.is_active ? '✅' : '❌'}</td>
+                        <td>
+                            <button onclick="openEditModal(${u.id}, '${u.username}', '${u.full_name || ''}', '${u.role}', ${u.is_active})" style="background:transparent; border:none; cursor:pointer; font-size:14px;" title="Éditer">✏️</button>
+                            <button onclick="deleteUser(${u.id}, '${u.username}')" style="background:transparent; border:none; cursor:pointer; font-size:14px;" title="Supprimer">🗑️</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch { }
+        }
+
+        // User Management
+        function openEditModal(id, username, fullName, role, isActive) {
+            document.getElementById('editUserId').value = id;
+            document.getElementById('editUsername').value = username;
+            document.getElementById('editFullName').value = fullName;
+            document.getElementById('editRole').value = role;
+            document.getElementById('editActive').checked = isActive;
+            document.getElementById('editPassword').value = '';
+            document.getElementById('editUserError').style.display = 'none';
+            document.getElementById('editUserModal').classList.add('active');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editUserModal').classList.remove('active');
+        }
+
+        async function saveUser() {
+            const id = document.getElementById('editUserId').value;
+            const payload = {
+                full_name: document.getElementById('editFullName').value,
+                role: document.getElementById('editRole').value,
+                is_active: document.getElementById('editActive').checked
+            };
+            const pwd = document.getElementById('editPassword').value;
+            if (pwd) payload.password = pwd;
+
+            try {
+                const resp = await apiFetch('/admin/users/' + id, {
+                    method: 'PUT',
+                    body: JSON.stringify(payload)
+                });
+                if (resp && resp.ok) {
+                    closeEditModal();
+                    loadUsers();
+                } else if (resp) {
+                    const err = await resp.json();
+                    const errDiv = document.getElementById('editUserError');
+                    errDiv.textContent = err.detail || "Erreur de mise à jour";
+                    errDiv.style.display = 'block';
+                }
+            } catch (err) {
+                console.error(err);
+                const errDiv = document.getElementById('editUserError');
+                errDiv.textContent = 'Exception JS: ' + err.message;
+                errDiv.style.display = 'block';
+            }
+        }
+
+        async function deleteUser(id, username) {
+            if (!confirm("Supprimer définitivement l'utilisateur " + username + " ?")) return;
+            try {
+                const resp = await apiFetch('/admin/users/' + id, { method: 'DELETE' });
+                if (resp && resp.ok) {
+                    loadUsers();
+                    loadStats();
+                } else if (resp) {
+                    const err = await resp.json();
+                    alert(err.detail || "Impossible de supprimer");
+                }
+            } catch (e) { }
+        }
+
+        // Load questions
+        async function loadQuestions() {
+            try {
+                const resp = await apiFetch('/questions');
+                if (!resp || !resp.ok) return;
+                const questions = await resp.json();
+                document.getElementById('questionsBody').innerHTML = questions.length === 0
+                    ? '<tr><td colspan="4" style="color:var(--muted); text-align:center">Aucune question</td></tr>'
+                    : questions.map(q => `
+                        <tr>
+                            <td><code>${q.question_id}</code></td>
+                            <td>${q.label}</td>
+                            <td>${q.created_by}</td>
+                            <td>${q.created_at ? q.created_at.slice(0, 16) : '-'}</td>
+                        </tr>
+                    `).join('');
+            } catch { }
+        }
+
+        // Add question
+        async function addQuestion() {
+            const qId = document.getElementById('newQId').value.trim();
+            const label = document.getElementById('newQLabel').value.trim();
+            if (!qId || !label) return;
+            try {
+                const resp = await apiFetch('/questions', {
+                    method: 'POST',
+                    body: JSON.stringify({ question_id: qId, label: label }),
+                });
+                if (resp && resp.ok) {
+                    document.getElementById('newQId').value = '';
+                    document.getElementById('newQLabel').value = '';
+                    loadQuestions();
+                    loadStats();
+                }
+            } catch { }
+        }
+
+        // Aggregate votes
+        async function aggregate() {
+            const qId = document.getElementById('aggQuestionId').value.trim();
+            if (!qId) return;
+            try {
+                const resp = await fetch(`${API_BASE}/votes/aggregate?question_id=${encodeURIComponent(qId)}`, {
+                    headers: authHeaders()
+                });
+                if (!resp.ok) return;
+                const data = await resp.json();
+                document.getElementById('aggResult').style.display = 'block';
+                document.getElementById('aggQ').textContent = data.question_id;
+                document.getElementById('aggTotal').textContent = data.total;
+                document.getElementById('aggCount').textContent = data.count;
+                document.getElementById('aggNo').textContent = data.count - data.total;
+            } catch { }
+        }
+
+        // Load audit logs
+        async function loadAudit() {
+            try {
+                const resp = await fetch(`${API_BASE}/audit/logs?limit=20`, { headers: authHeaders() });
+                if (!resp.ok) return;
+                const logs = await resp.json();
+                document.getElementById('auditBody').innerHTML = logs.map(l => `
+                    <tr>
+                        <td>${l.id}</td>
+                        <td>${l.event_type}</td>
+                        <td style="font-family:monospace;font-size:11px">${(l.payload_hash || '').slice(0, 16)}…</td>
+                        <td style="font-family:monospace;font-size:11px">${l.prev_hash ? l.prev_hash.slice(0, 16) + '…' : 'NULL'}</td>
+                        <td>${l.created_at ? String(l.created_at).slice(0, 16) : '-'}</td>
+                    </tr>
+                `).join('');
+            } catch { }
+        }
+
+        // Verify hash chain
+        async function verifyChain() {
+            try {
+                const resp = await fetch(`${API_BASE}/audit/verify`, { headers: authHeaders() });
+                if (!resp.ok) return;
+                const data = await resp.json();
+                const el = document.getElementById('chainResult');
+                el.style.display = 'block';
+                if (data.ok) {
+                    el.className = 'chain-result chain-ok';
+                    el.textContent = `✅ Hash-chain intègre — ${data.length} entrées vérifiées`;
+                } else {
+                    el.className = 'chain-result chain-fail';
+                    el.textContent = `❌ CORRUPTION détectée à l'entrée #${data.broken_id}`;
+                }
+            } catch { }
+        }
+
+        // Generate QR Code
+        let currentQR = null;
+        function generateQCode() {
+            const container = document.getElementById('qrCodeDisplay');
+            container.innerHTML = '';
+
+            const prefix = document.getElementById('qrPrefix').value;
+            const val = document.getElementById('qrInputValue').value.trim();
+
+            if (!val) {
+                container.innerHTML = '<div style="color:#ef4444; font-size:13px; padding:20px;">Veuillez entrer une valeur</div>';
+                return;
+            }
+
+            const finalString = prefix ? prefix + val : val;
+
+            currentQR = new QRCode(container, {
+                text: finalString,
+                width: 200,
+                height: 200,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            // Add a small label below
+            const label = document.createElement('div');
+            label.style.marginTop = '12px';
+            label.style.fontSize = '12px';
+            label.style.fontWeight = '600';
+            label.style.color = 'var(--text)';
+            label.innerText = finalString;
+            container.appendChild(label);
+        }
+
+        // Init
+        loadStats();
+        loadUsers();
+        loadQuestions();
+        loadAudit();
+    </script>
+</body>
+
+</html>

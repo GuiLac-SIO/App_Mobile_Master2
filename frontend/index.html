@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <meta name="description"
+        content="Application agent terrain – Collecte sécurisée de votes avec chiffrement homomorphe Paillier" />
+    <meta name="theme-color" content="#0f172a" />
+    <title>Agent Terrain – Votes Sécurisés</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+    <!-- ───── Header ───── -->
+    <header class="header">
+        <div class="header-left">
+            <span class="header-icon">🛡️</span>
+            <h1>Agent Terrain</h1>
+            <span style="font-size:12px; color:var(--muted); margin-left:8px;" id="agentName"></span>
+        </div>
+        <div class="header-right">
+            <span id="onlineStatus" class="status-badge online">En ligne</span>
+            <span id="pendingCount" class="pending-badge" style="display:none">0</span>
+            <button onclick="window.svLogout()"
+                style="padding:6px 12px; border-radius:8px; border:1px solid #1e293b; background:transparent; color:#ef4444; font-size:12px; font-weight:600; cursor:pointer;">🚪</button>
+        </div>
+    </header>
+
+    <!-- ───── Step Indicator ───── -->
+    <nav class="steps-nav">
+        <div class="step active" data-step="1"><span class="step-num">1</span><span class="step-label">Question</span>
+        </div>
+        <div class="step" data-step="2"><span class="step-num">2</span><span class="step-label">Participant</span></div>
+        <div class="step" data-step="3"><span class="step-num">3</span><span class="step-label">Vote</span></div>
+        <div class="step" data-step="4"><span class="step-num">4</span><span class="step-label">Photo</span></div>
+        <div class="step" data-step="5"><span class="step-num">5</span><span class="step-label">Envoi</span></div>
+    </nav>
+
+    <!-- ───── Main Content ───── -->
+    <main id="mainContent">
+
+        <!-- Step 1: Scan Question QR -->
+        <section id="step1" class="card step-card visible">
+            <h2>📋 Scanner la question</h2>
+            <p class="card-desc">Scannez le QR code de la question pré-enregistrée.</p>
+            <div id="qr-reader-question" class="qr-reader"></div>
+            <div class="manual-input">
+                <span>ou saisir manuellement :</span>
+                <input type="text" id="manualQuestionId" placeholder="ID question (ex: Q-001)" />
+            </div>
+            <div id="questionResult" class="result-box" style="display:none">
+                <span class="result-label">Question ID :</span>
+                <span id="questionIdDisplay" class="result-value"></span>
+            </div>
+            <button id="btnStep1Next" class="btn-primary" disabled>Suivant →</button>
+        </section>
+
+        <!-- Step 2: Scan Participant QR -->
+        <section id="step2" class="card step-card">
+            <h2>👤 Scanner le participant</h2>
+            <p class="card-desc">Scannez le QR code d'identification du participant.</p>
+            <div id="qr-reader-participant" class="qr-reader"></div>
+            <div class="manual-input">
+                <span>ou saisir manuellement :</span>
+                <input type="text" id="manualParticipantId" placeholder="ID participant (ex: P-042)" />
+            </div>
+            <div id="participantResult" class="result-box" style="display:none">
+                <span class="result-label">Participant ID :</span>
+                <span id="participantIdDisplay" class="result-value"></span>
+            </div>
+            <div class="btn-row">
+                <button id="btnStep2Back" class="btn-secondary">← Retour</button>
+                <button id="btnStep2Next" class="btn-primary" disabled>Suivant →</button>
+            </div>
+        </section>
+
+        <!-- Step 3: Binary Vote -->
+        <section id="step3" class="card step-card">
+            <h2>🗳️ Enregistrer le vote</h2>
+            <p class="card-desc">Le participant répond par <strong>Oui</strong> ou <strong>Non</strong>.</p>
+            <div class="vote-buttons">
+                <button id="voteYes" class="vote-btn vote-yes">
+                    <span class="vote-icon">👍</span>
+                    <span>Oui (1)</span>
+                </button>
+                <button id="voteNo" class="vote-btn vote-no">
+                    <span class="vote-icon">👎</span>
+                    <span>Non (0)</span>
+                </button>
+            </div>
+            <div id="voteResult" class="result-box" style="display:none">
+                <span class="result-label">Vote enregistré :</span>
+                <span id="voteValueDisplay" class="result-value"></span>
+            </div>
+            <div class="btn-row">
+                <button id="btnStep3Back" class="btn-secondary">← Retour</button>
+                <button id="btnStep3Next" class="btn-primary" disabled>Suivant →</button>
+            </div>
+        </section>
+
+        <!-- Step 4: Photo Capture -->
+        <section id="step4" class="card step-card">
+            <h2>📸 Photo du participant</h2>
+            <p class="card-desc">Prenez une photo du participant (pouce levé = oui, baissé = non).</p>
+            <div class="camera-container">
+                <video id="cameraPreview" autoplay playsinline></video>
+                <canvas id="cameraCanvas" style="display:none"></canvas>
+                <img id="photoPreview" class="photo-preview" style="display:none" alt="Capture" />
+            </div>
+            <button id="btnCapture" class="btn-capture">📷 Capturer</button>
+            <button id="btnRetake" class="btn-secondary" style="display:none">🔄 Reprendre</button>
+            <div class="btn-row">
+                <button id="btnStep4Back" class="btn-secondary">← Retour</button>
+                <button id="btnStep4Next" class="btn-primary" disabled>Suivant →</button>
+            </div>
+        </section>
+
+        <!-- Step 5: Summary & Submit -->
+        <section id="step5" class="card step-card">
+            <h2>🔒 Résumé & envoi chiffré</h2>
+            <p class="card-desc">Vérifiez les données avant transmission sécurisée.</p>
+            <div class="summary-box">
+                <div class="summary-row"><span>Question :</span><span id="sumQuestion">-</span></div>
+                <div class="summary-row"><span>Participant :</span><span id="sumParticipant">-</span></div>
+                <div class="summary-row"><span>Vote :</span><span id="sumVote">-</span></div>
+                <div class="summary-row"><span>Photo :</span><span id="sumPhoto">-</span></div>
+                <div class="summary-row"><span>Timestamp :</span><span id="sumTimestamp">-</span></div>
+                <div class="summary-row"><span>Géolocalisation :</span><span id="sumGeo">-</span></div>
+                <div class="summary-row"><span>Agent :</span><span id="sumAgent">-</span></div>
+            </div>
+            <div id="cryptoInfo" class="crypto-box" style="display:none">
+                <h3>🔐 Chiffrement</h3>
+                <div class="summary-row"><span>Vote (Paillier) :</span><span id="sumCiphertext" class="mono">-</span>
+                </div>
+                <div class="summary-row"><span>Photo (AES-GCM) :</span><span id="sumPhotoEnc" class="mono">-</span>
+                </div>
+            </div>
+            <div class="btn-row">
+                <button id="btnStep5Back" class="btn-secondary">← Retour</button>
+                <button id="btnSubmit" class="btn-submit">🚀 Transmettre au serveur</button>
+            </div>
+            <div id="submitResult" class="result-box" style="display:none">
+                <span id="submitStatus"></span>
+            </div>
+        </section>
+
+        <!-- Success screen -->
+        <section id="stepDone" class="card step-card">
+            <div class="done-screen">
+                <span class="done-icon">✅</span>
+                <h2>Collecte enregistrée</h2>
+                <p>Les données ont été chiffrées et transmises avec succès.</p>
+                <button id="btnNewCollect" class="btn-primary">Nouvelle collecte</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- ───── Footer ───── -->
+    <footer class="footer">
+        <span>Secure Votes v0.1 — Chiffrement Paillier · AES-256-GCM</span>
+    </footer>
+    <!-- Auth check -->
+    <script>
+        (function () {
+            const token = localStorage.getItem('sv_token');
+            if (!token) { window.location.href = '/login.html'; return; }
+            const username = localStorage.getItem('sv_username') || 'agent';
+            document.getElementById('agentName').textContent = username;
+            window.svLogout = function () {
+                localStorage.removeItem('sv_token');
+                localStorage.removeItem('sv_role');
+                localStorage.removeItem('sv_username');
+                window.location.href = '/login.html';
+            };
+        })();
+    </script>
+    <!-- ───── Scripts ───── -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="js/paillier.js"></script>
+    <script src="js/crypto.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/qr-scanner.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>

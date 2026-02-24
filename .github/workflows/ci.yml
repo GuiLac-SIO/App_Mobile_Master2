@@ -1,0 +1,121 @@
+name: CI – Secure Votes
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  # ── Lint ──────────────────────────────────────────
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install linter
+        run: pip install ruff
+      - name: Run ruff
+        run: ruff check backend/app/ backend/tests/ backend/audit/
+
+  # ── Tests ─────────────────────────────────────────
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: votes_user
+          POSTGRES_PASSWORD: votes_pass
+          POSTGRES_DB: votes_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U votes_user -d votes_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      minio:
+        image: quay.io/minio/minio:RELEASE.2024-01-13T07-53-03Z
+        env:
+          MINIO_ROOT_USER: minioadmin
+          MINIO_ROOT_PASSWORD: minioadmin
+        ports:
+          - 9000:9000
+        options: >-
+          --health-cmd "curl -f http://localhost:9000/minio/health/live || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 3
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt
+
+      - name: Run DB init script
+        env:
+          PGPASSWORD: votes_pass
+        run: |
+          sudo apt-get install -y postgresql-client
+          psql -h localhost -U votes_user -d votes_db -f backend/db_init/init.sql
+
+      - name: Run tests
+        env:
+          DATABASE_URL: "postgresql+asyncpg://app_user:app_pass@localhost:5432/votes_db"
+          MINIO_ENDPOINT: "http://localhost:9000"
+          MINIO_ACCESS_KEY: minioadmin
+          MINIO_SECRET_KEY: minioadmin
+          MINIO_BUCKET: photos
+        run: pytest backend/tests/ -v --tb=short
+
+  # ── Dependency scan ───────────────────────────────
+  dependency-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pip-audit
+        run: pip install pip-audit
+      - name: Audit dependencies
+        run: pip-audit -r backend/requirements.txt
+
+  # ── Secret scan ───────────────────────────────────
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install detect-secrets
+        run: pip install detect-secrets
+      - name: Scan for secrets
+        run: |
+          detect-secrets scan --all-files --exclude-files '\.env\.example$' > .secrets-report.json
+          python -c "
+          import json, sys
+          with open('.secrets-report.json') as f:
+              r = json.load(f)
+          secrets = r.get('results', {})
+          total = sum(len(v) for v in secrets.values())
+          if total:
+              print(f'⚠️  {total} potential secret(s) found:')
+              for path, items in secrets.items():
+                  for s in items:
+                      print(f'  {path}:{s[\"line_number\"]} – {s[\"type\"]}')
+              sys.exit(1)
+          print('✅ No secrets detected')
+          "

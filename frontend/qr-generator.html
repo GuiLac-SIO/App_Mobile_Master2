@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Générateur de QR Codes – Votes Sécurisés</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #0b1224;
+            --card: #111827;
+            --border: #1e293b;
+            --accent: #22c55e;
+            --text: #e5e7eb;
+            --muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 24px;
+        }
+
+        h1 {
+            font-size: 22px;
+            margin-bottom: 8px;
+        }
+
+        p.desc {
+            color: var(--muted);
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
+        .grid {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .card h2 {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .card .id-text {
+            font-family: monospace;
+            color: var(--accent);
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .qr-img {
+            background: white;
+            border-radius: 8px;
+            padding: 8px;
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+
+        .qr-img img,
+        .qr-img canvas {
+            display: block;
+        }
+
+        label {
+            display: block;
+            margin: 16px 0 4px;
+            font-size: 13px;
+            color: var(--muted);
+            text-align: left;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        button {
+            margin-top: 16px;
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: #0b1224;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        button:active {
+            transform: scale(0.97);
+        }
+
+        .section {
+            margin-bottom: 32px;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 32px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🏷️ Générateur de QR Codes</h1>
+    <p class="desc">Créez des QR codes pour les questions et les participants afin de tester l'application agent
+        terrain.</p>
+
+    <div class="section">
+        <h2 style="font-size:18px; margin-bottom:16px;">📋 Questions</h2>
+        <label>Nombre de questions</label>
+        <input type="number" id="numQuestions" value="3" min="1" max="20" />
+        <label>Préfixe</label>
+        <input type="text" id="questionPrefix" value="Q-" />
+        <button onclick="generateQRs('question')">Générer les QR codes</button>
+        <div id="questionGrid" class="grid" style="margin-top:16px;"></div>
+    </div>
+
+    <hr />
+
+    <div class="section">
+        <h2 style="font-size:18px; margin-bottom:16px;">👤 Participants</h2>
+        <label>Nombre de participants</label>
+        <input type="number" id="numParticipants" value="5" min="1" max="50" />
+        <label>Préfixe</label>
+        <input type="text" id="participantPrefix" value="P-" />
+        <button onclick="generateQRs('participant')">Générer les QR codes</button>
+        <div id="participantGrid" class="grid" style="margin-top:16px;"></div>
+    </div>
+
+    <!-- QR code generation library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script>
+        function generateQRs(type) {
+            const isQuestion = type === 'question';
+            const count = parseInt(document.getElementById(isQuestion ? 'numQuestions' : 'numParticipants').value);
+            const prefix = document.getElementById(isQuestion ? 'questionPrefix' : 'participantPrefix').value;
+            const grid = document.getElementById(isQuestion ? 'questionGrid' : 'participantGrid');
+            grid.innerHTML = '';
+
+            for (let i = 1; i <= count; i++) {
+                const id = `${prefix}${String(i).padStart(3, '0')}`;
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <h2>${isQuestion ? '📋' : '👤'} ${isQuestion ? 'Question' : 'Participant'} ${i}</h2>
+                    <div class="id-text">${id}</div>
+                    <div class="qr-img"><canvas id="qr-${type}-${i}"></canvas></div>
+                `;
+                grid.appendChild(card);
+
+                QRCode.toCanvas(document.getElementById(`qr-${type}-${i}`), id, {
+                    width: 180,
+                    margin: 1,
+                    color: { dark: '#000000', light: '#ffffff' },
+                });
+            }
+        }
+
+        // Generate defaults on load
+        generateQRs('question');
+        generateQRs('participant');
+    </script>
+</body>
+
+</html>
