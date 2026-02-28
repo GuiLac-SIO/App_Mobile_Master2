@@ -4,7 +4,7 @@ import pytest
 from httpx import AsyncClient
 
 from app.crypto.paillier import decrypt, encrypt
-from app.db import get_engine, init_db, reset_db
+from app.db import get_engine, init_db, reset_db, create_question
 from app.main import DEMO_KEY_ID, app, get_demo_keypair
 
 
@@ -16,8 +16,8 @@ async def test_aggregate_votes_homomorphic_sum():
 
     pub, priv = get_demo_keypair()
     question_id = "Q-agg"
+    await create_question(engine, question_id=question_id, label="test", created_by="test")
 
-    # Two votes: 1 and 1 (binary yes) encrypted with demo public key
     c1 = encrypt(pub, 1)
     c2 = encrypt(pub, 1)
 
@@ -55,7 +55,6 @@ async def test_aggregate_votes_homomorphic_sum():
     assert body["count"] == 2
     assert body["total"] == 2
 
-    # Verify decrypting the returned aggregate matches total
     agg_ct = int(body["aggregate_ciphertext"])
     assert decrypt(priv, agg_ct) == 2
 

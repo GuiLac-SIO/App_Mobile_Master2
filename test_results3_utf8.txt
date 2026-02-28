@@ -1,0 +1,1266 @@
+﻿docker :  Container 
+sujet_cnam-db-1  
+Running
+Au caractère Ligne:1 : 
+1
++ docker compose run 
+-T --rm api pytest -v 
+> test_results3.txt 
+2>&1
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: ( Container su   
+ jet_cnam-db-1  Run    
+ning:String) [], R    
+emoteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+ Container 
+sujet_cnam-minio-1  
+Running
+============================= test session starts ==============================
+platform linux -- Python 3.11.14, pytest-7.4.4, pluggy-1.6.0 -- /usr/local/bin/python3.11
+cachedir: .pytest_cache
+rootdir: /app
+plugins: asyncio-0.23.4, anyio-4.12.1
+asyncio: mode=Mode.STRICT
+collecting ... collected 12 items
+
+tests/test_audit_chain.py::test_audit_chain_ok FAILED                    [  8%]
+tests/test_audit_chain.py::test_audit_chain_detects_corruption FAILED    [ 16%]
+tests/test_db_models.py::test_insert_and_read_separated_silos PASSED     [ 25%]
+tests/test_health.py::test_health_returns_ok PASSED                      [ 33%]
+tests/test_iam.py::test_db_role_is_not_privileged_and_has_needed_grants PASSED [ 41%]
+tests/test_paillier.py::test_encrypt_decrypt_roundtrip PASSED            [ 50%]
+tests/test_paillier.py::test_homomorphic_addition PASSED                 [ 58%]
+tests/test_paillier.py::test_add_plaintext_optimization PASSED           [ 66%]
+tests/test_upload_photo.py::test_upload_photo_stores_object_and_metadata PASSED [ 75%]
+tests/test_votes_aggregate.py::test_aggregate_votes_homomorphic_sum FAILED [ 83%]
+tests/test_votes_aggregate.py::test_aggregate_no_votes_returns_zero PASSED [ 91%]
+tests/test_votes_send.py::test_send_vote_stores_ciphertext_and_audit FAILED [100%]
+
+=================================== FAILURES ===================================
+_____________________________ test_audit_chain_ok ______________________________
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x7f05ac15e3e0>
+operation = 'INSERT INTO votes.questions (question_id, label, created_by) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR) RETURNING votes.questions.id, votes.questions.question_id, votes.questions.label, votes.questions.created_at'
+parameters = ('Q-audit', 'test', 'test')
+
+    async def _prepare_and_execute(self, operation, parameters):
+        adapt_connection = self._adapt_connection
+    
+        async with adapt_connection._execute_mutex:
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            if parameters is None:
+                parameters = ()
+    
+            try:
+                prepared_stmt, attributes = await adapt_connection._prepare(
+                    operation, self._invalidate_schema_cache_asof
+                )
+    
+                if attributes:
+                    self.description = [
+                        (
+                            attr.name,
+                            attr.type.oid,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        )
+                        for attr in attributes
+                    ]
+                else:
+                    self.description = None
+    
+                if self.server_side:
+                    self._cursor = await prepared_stmt.cursor(*parameters)
+                    self.rowcount = -1
+                else:
+>                   self._rows = await prepared_stmt.fetch(*parameters)
+
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:546: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:176: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+/usr/local/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:241: in __bind_execute
+    data, status, _ = await self.__do_execute(
+/usr/local/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:230: in __do_execute
+    return await executor(protocol)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   asyncpg.exceptions.UniqueViolationError: duplicate key value violates unique constraint "questions_question_id_key"
+E   DETAIL:  Key (question_id)=(Q-audit) already exists.
+
+asyncpg/protocol/protocol.pyx:207: UniqueViolationError
+
+The above exception was the direct cause of the following exception:
+
+self = <sqlalchemy.engine.base.Connection object at 0x7f05ac389590>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x7f05ac370450>
+context = <sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x7f05ac3a3f50>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x7f05ac199090>
+parameters = [('Q-audit', 'test', 'test')]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1969: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:922: in do_execute
+    cursor.execute(statement, parameters)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:580: in execute
+    self._adapt_connection.await_(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:130: in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:195: in greenlet_spawn
+    value = await result
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:558: in _prepare_and_execute
+    self._handle_exception(error)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:509: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x7f05ac142c50>>
+error = UniqueViolationError('duplicate key value violates unique constraint "questions_question_id_key"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = (
+                        translated_error.sqlstate
+                    ) = getattr(error, "sqlstate", None)
+>                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "questions_question_id_key"
+E                   DETAIL:  Key (question_id)=(Q-audit) already exists.
+
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+
+The above exception was the direct cause of the following exception:
+
+    @pytest.mark.anyio
+    async def test_audit_chain_ok():
+        engine = get_engine()
+        await init_db(engine)
+        await reset_db(engine)
+>       await create_question(engine, question_id="Q-audit", label="test", created_by="test")
+
+tests/test_audit_chain.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+app/db.py:528: in create_question
+    result = await conn.execute(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/engine.py:659: in execute
+    result = await greenlet_spawn(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:200: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1416: in execute
+    return meth(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:517: in _execute_on_connection
+    return connection._execute_clauseelement(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1639: in _execute_clauseelement
+    ret = self._execute_context(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1848: in _execute_context
+    return self._exec_single_context(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1988: in _exec_single_context
+    self._handle_dbapi_exception(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2344: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1969: in _exec_single_context
+    self.dialect.do_execute(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:922: in do_execute
+    cursor.execute(statement, parameters)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:580: in execute
+    self._adapt_connection.await_(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:130: in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:195: in greenlet_spawn
+    value = await result
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:558: in _prepare_and_execute
+    self._handle_exception(error)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:509: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x7f05ac142c50>>
+error = UniqueViolationError('duplicate key value violates unique constraint "questions_question_id_key"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = (
+                        translated_error.sqlstate
+                    ) = getattr(error, "sqlstate", None)
+>                   raise translated_error from error
+E                   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "questions_question_id_key"
+E                   DETAIL:  Key (question_id)=(Q-audit) already exists.
+E                   [SQL: INSERT INTO votes.questions (question_id, label, created_by) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR) RETURNING votes.questions.id, votes.questions.question_id, votes.questions.label, votes.questions.created_at]
+E                   [parameters: ('Q-audit', 'test', 'test')]
+E                   (Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+_____________________ test_audit_chain_detects_corruption ______________________
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x7f05ac1fd9c0>
+operation = 'INSERT INTO votes.questions (question_id, label, created_by) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR) RETURNING votes.questions.id, votes.questions.question_id, votes.questions.label, votes.questions.created_at'
+parameters = ('Q-corrupt-0', 'test', 'test')
+
+    async def _prepare_and_execute(self, operation, parameters):
+        adapt_connection = self._adapt_connection
+    
+        async with adapt_connection._execute_mutex:
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            if parameters is None:
+                parameters = ()
+    
+            try:
+                prepared_stmt, attributes = await adapt_connection._prepare(
+                    operation, self._invalidate_schema_cache_asof
+                )
+    
+                if attributes:
+                    self.description = [
+                        (
+                            attr.name,
+                            attr.type.oid,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        )
+                        for attr in attributes
+                    ]
+                else:
+                    self.description = None
+    
+                if self.server_side:
+                    self._cursor = await prepared_stmt.cursor(*parameters)
+                    self.rowcount = -1
+                else:
+>                   self._rows = await prepared_stmt.fetch(*parameters)
+
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:546: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:176: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+/usr/local/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:241: in __bind_execute
+    data, status, _ = await self.__do_execute(
+/usr/local/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:230: in __do_execute
+    return await executor(protocol)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   asyncpg.exceptions.UniqueViolationError: duplicate key value violates unique constraint "questions_question_id_key"
+E   DETAIL:  Key (question_id)=(Q-corrupt-0) already exists.
+
+asyncpg/protocol/protocol.pyx:207: UniqueViolationError
+
+The above exception was the direct cause of the following exception:
+
+self = <sqlalchemy.engine.base.Connection object at 0x7f05aad0e990>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x7f05aad0d490>
+context = <sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x7f05ac1d9d50>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x7f05ac1d9090>
+parameters = [('Q-corrupt-0', 'test', 'test')]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1969: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:922: in do_execute
+    cursor.execute(statement, parameters)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:580: in execute
+    self._adapt_connection.await_(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:130: in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:195: in greenlet_spawn
+    value = await result
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:558: in _prepare_and_execute
+    self._handle_exception(error)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:509: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x7f05ac18ba60>>
+error = UniqueViolationError('duplicate key value violates unique constraint "questions_question_id_key"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = (
+                        translated_error.sqlstate
+                    ) = getattr(error, "sqlstate", None)
+>                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "questions_question_id_key"
+E                   DETAIL:  Key (question_id)=(Q-corrupt-0) already exists.
+
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+
+The above exception was the direct cause of the following exception:
+
+    @pytest.mark.anyio
+    async def test_audit_chain_detects_corruption():
+        engine = get_engine()
+        await init_db(engine)
+        await reset_db(engine)
+        for i in range(2):
+>           await create_question(engine, question_id=f"Q-corrupt-{i}", label="test", created_by="test")
+
+tests/test_audit_chain.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+app/db.py:528: in create_question
+    result = await conn.execute(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/engine.py:659: in execute
+    result = await greenlet_spawn(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:200: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1416: in execute
+    return meth(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:517: in _execute_on_connection
+    return connection._execute_clauseelement(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1639: in _execute_clauseelement
+    ret = self._execute_context(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1848: in _execute_context
+    return self._exec_single_context(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1988: in _exec_single_context
+    self._handle_dbapi_exception(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2344: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1969: in _exec_single_context
+    self.dialect.do_execute(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:922: in do_execute
+    cursor.execute(statement, parameters)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:580: in execute
+    self._adapt_connection.await_(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:130: in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:195: in greenlet_spawn
+    value = await result
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:558: in _prepare_and_execute
+    self._handle_exception(error)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:509: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x7f05ac18ba60>>
+error = UniqueViolationError('duplicate key value violates unique constraint "questions_question_id_key"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = (
+                        translated_error.sqlstate
+                    ) = getattr(error, "sqlstate", None)
+>                   raise translated_error from error
+E                   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "questions_question_id_key"
+E                   DETAIL:  Key (question_id)=(Q-corrupt-0) already exists.
+E                   [SQL: INSERT INTO votes.questions (question_id, label, created_by) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR) RETURNING votes.questions.id, votes.questions.question_id, votes.questions.label, votes.questions.created_at]
+E                   [parameters: ('Q-corrupt-0', 'test', 'test')]
+E                   (Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+_____________________ test_aggregate_votes_homomorphic_sum _____________________
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x7f05aaa6f460>
+operation = 'INSERT INTO votes.questions (question_id, label, created_by) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR) RETURNING votes.questions.id, votes.questions.question_id, votes.questions.label, votes.questions.created_at'
+parameters = ('Q-agg', 'test', 'test')
+
+    async def _prepare_and_execute(self, operation, parameters):
+        adapt_connection = self._adapt_connection
+    
+        async with adapt_connection._execute_mutex:
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            if parameters is None:
+                parameters = ()
+    
+            try:
+                prepared_stmt, attributes = await adapt_connection._prepare(
+                    operation, self._invalidate_schema_cache_asof
+                )
+    
+                if attributes:
+                    self.description = [
+                        (
+                            attr.name,
+                            attr.type.oid,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        )
+                        for attr in attributes
+                    ]
+                else:
+                    self.description = None
+    
+                if self.server_side:
+                    self._cursor = await prepared_stmt.cursor(*parameters)
+                    self.rowcount = -1
+                else:
+>                   self._rows = await prepared_stmt.fetch(*parameters)
+
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:546: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:176: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+/usr/local/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:241: in __bind_execute
+    data, status, _ = await self.__do_execute(
+/usr/local/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:230: in __do_execute
+    return await executor(protocol)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   asyncpg.exceptions.UniqueViolationError: duplicate key value violates unique constraint "questions_question_id_key"
+E   DETAIL:  Key (question_id)=(Q-agg) already exists.
+
+asyncpg/protocol/protocol.pyx:207: UniqueViolationError
+
+The above exception was the direct cause of the following exception:
+
+self = <sqlalchemy.engine.base.Connection object at 0x7f05aad68750>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x7f05aad64810>
+context = <sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x7f05aa9e6c50>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x7f05aa9e6d10>
+parameters = [('Q-agg', 'test', 'test')]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1969: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:922: in do_execute
+    cursor.execute(statement, parameters)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:580: in execute
+    self._adapt_connection.await_(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:130: in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:195: in greenlet_spawn
+    value = await result
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:558: in _prepare_and_execute
+    self._handle_exception(error)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:509: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x7f05ac1e3a60>>
+error = UniqueViolationError('duplicate key value violates unique constraint "questions_question_id_key"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = (
+                        translated_error.sqlstate
+                    ) = getattr(error, "sqlstate", None)
+>                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "questions_question_id_key"
+E                   DETAIL:  Key (question_id)=(Q-agg) already exists.
+
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+
+The above exception was the direct cause of the following exception:
+
+    @pytest.mark.anyio
+    async def test_aggregate_votes_homomorphic_sum():
+        engine = get_engine()
+        await init_db(engine)
+        await reset_db(engine)
+    
+        pub, priv = get_demo_keypair()
+        question_id = "Q-agg"
+>       await create_question(engine, question_id=question_id, label="test", created_by="test")
+
+tests/test_votes_aggregate.py:19: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+app/db.py:528: in create_question
+    result = await conn.execute(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/engine.py:659: in execute
+    result = await greenlet_spawn(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:200: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1416: in execute
+    return meth(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:517: in _execute_on_connection
+    return connection._execute_clauseelement(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1639: in _execute_clauseelement
+    ret = self._execute_context(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1848: in _execute_context
+    return self._exec_single_context(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1988: in _exec_single_context
+    self._handle_dbapi_exception(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2344: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1969: in _exec_single_context
+    self.dialect.do_execute(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:922: in do_execute
+    cursor.execute(statement, parameters)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:580: in execute
+    self._adapt_connection.await_(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:130: in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:195: in greenlet_spawn
+    value = await result
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:558: in _prepare_and_execute
+    self._handle_exception(error)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:509: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x7f05ac1e3a60>>
+error = UniqueViolationError('duplicate key value violates unique constraint "questions_question_id_key"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = (
+                        translated_error.sqlstate
+                    ) = getattr(error, "sqlstate", None)
+>                   raise translated_error from error
+E                   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "questions_question_id_key"
+E                   DETAIL:  Key (question_id)=(Q-agg) already exists.
+E                   [SQL: INSERT INTO votes.questions (question_id, label, created_by) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR) RETURNING votes.questions.id, votes.questions.question_id, votes.questions.label, votes.questions.created_at]
+E                   [parameters: ('Q-agg', 'test', 'test')]
+E                   (Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+__________________ test_send_vote_stores_ciphertext_and_audit __________________
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x7f05aa92f5e0>
+operation = 'INSERT INTO votes.questions (question_id, label, created_by) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR) RETURNING votes.questions.id, votes.questions.question_id, votes.questions.label, votes.questions.created_at'
+parameters = ('Q1', 'test', 'test')
+
+    async def _prepare_and_execute(self, operation, parameters):
+        adapt_connection = self._adapt_connection
+    
+        async with adapt_connection._execute_mutex:
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            if parameters is None:
+                parameters = ()
+    
+            try:
+                prepared_stmt, attributes = await adapt_connection._prepare(
+                    operation, self._invalidate_schema_cache_asof
+                )
+    
+                if attributes:
+                    self.description = [
+                        (
+                            attr.name,
+                            attr.type.oid,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        )
+                        for attr in attributes
+                    ]
+                else:
+                    self.description = None
+    
+                if self.server_side:
+                    self._cursor = await prepared_stmt.cursor(*parameters)
+                    self.rowcount = -1
+                else:
+>                   self._rows = await prepared_stmt.fetch(*parameters)
+
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:546: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:176: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+/usr/local/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:241: in __bind_execute
+    data, status, _ = await self.__do_execute(
+/usr/local/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:230: in __do_execute
+    return await executor(protocol)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   asyncpg.exceptions.UniqueViolationError: duplicate key value violates unique constraint "questions_question_id_key"
+E   DETAIL:  Key (question_id)=(Q1) already exists.
+
+asyncpg/protocol/protocol.pyx:207: UniqueViolationError
+
+The above exception was the direct cause of the following exception:
+
+self = <sqlalchemy.engine.base.Connection object at 0x7f05aaf3dd10>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x7f05a92f1190>
+context = <sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x7f05aa9d6050>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x7f05aa9d6450>
+parameters = [('Q1', 'test', 'test')]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1969: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:922: in do_execute
+    cursor.execute(statement, parameters)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:580: in execute
+    self._adapt_connection.await_(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:130: in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:195: in greenlet_spawn
+    value = await result
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:558: in _prepare_and_execute
+    self._handle_exception(error)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:509: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x7f05aa9d85e0>>
+error = UniqueViolationError('duplicate key value violates unique constraint "questions_question_id_key"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = (
+                        translated_error.sqlstate
+                    ) = getattr(error, "sqlstate", None)
+>                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "questions_question_id_key"
+E                   DETAIL:  Key (question_id)=(Q1) already exists.
+
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+
+The above exception was the direct cause of the following exception:
+
+    @pytest.mark.anyio
+    async def test_send_vote_stores_ciphertext_and_audit():
+        engine = get_engine()
+        await init_db(engine)
+        await reset_db(engine)
+    
+        participant = f"participant-{uuid.uuid4()}"
+        agent = f"agent-{uuid.uuid4()}"
+        question_id = "Q1"
+>       await create_question(engine, question_id=question_id, label="test", created_by="test")
+
+tests/test_votes_send.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+app/db.py:528: in create_question
+    result = await conn.execute(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/engine.py:659: in execute
+    result = await greenlet_spawn(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:200: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1416: in execute
+    return meth(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:517: in _execute_on_connection
+    return connection._execute_clauseelement(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1639: in _execute_clauseelement
+    ret = self._execute_context(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1848: in _execute_context
+    return self._exec_single_context(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1988: in _exec_single_context
+    self._handle_dbapi_exception(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2344: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1969: in _exec_single_context
+    self.dialect.do_execute(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py:922: in do_execute
+    cursor.execute(statement, parameters)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:580: in execute
+    self._adapt_connection.await_(
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:130: in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+/usr/local/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:195: in greenlet_spawn
+    value = await result
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:558: in _prepare_and_execute
+    self._handle_exception(error)
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:509: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x7f05aa9d85e0>>
+error = UniqueViolationError('duplicate key value violates unique constraint "questions_question_id_key"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = (
+                        translated_error.sqlstate
+                    ) = getattr(error, "sqlstate", None)
+>                   raise translated_error from error
+E                   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "questions_question_id_key"
+E                   DETAIL:  Key (question_id)=(Q1) already exists.
+E                   [SQL: INSERT INTO votes.questions (question_id, label, created_by) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR) RETURNING votes.questions.id, votes.questions.question_id, votes.questions.label, votes.questions.created_at]
+E                   [parameters: ('Q1', 'test', 'test')]
+E                   (Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+/usr/local/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: IntegrityError
+=========================== short test summary info ============================
+FAILED tests/test_audit_chain.py::test_audit_chain_ok - sqlalchemy.exc.Integr...
+FAILED tests/test_audit_chain.py::test_audit_chain_detects_corruption - sqlal...
+FAILED tests/test_votes_aggregate.py::test_aggregate_votes_homomorphic_sum - ...
+FAILED tests/test_votes_send.py::test_send_vote_stores_ciphertext_and_audit
+========================= 4 failed, 8 passed in 5.62s ==========================
+

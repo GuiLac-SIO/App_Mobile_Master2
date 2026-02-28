@@ -17,7 +17,6 @@ async def check() -> dict:
     violations = []
     for row in rows:
         ct = row["ciphertext"].strip()
-        # Un vote en clair serait "0" ou "1" ; un chiffré Paillier est un grand entier
         if ct in ("0", "1", ""):
             violations.append({"vote_id": row["id"], "ciphertext": ct, "reason": "valeur binaire en clair"})
         elif len(ct) < 10:

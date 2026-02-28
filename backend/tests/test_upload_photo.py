@@ -59,6 +59,5 @@ async def test_upload_photo_stores_object_and_metadata():
     stored_bytes = get_object_bytes(object_name=object_name)
     assert stored_bytes == ciphertext + tag
 
-    # Ensure AES-GCM decryptable client-side
     decrypted = aesgcm.decrypt(nonce, ciphertext + tag, associated_data=None)
     assert decrypted == plaintext

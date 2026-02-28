@@ -45,7 +45,6 @@ async def check_db_connection(engine: AsyncEngine) -> bool:
     return True
 
 
-# --- Data model (separated schemas) ---
 
 IDENTITY_SCHEMA = "identity"
 VOTES_SCHEMA = "votes"
@@ -55,7 +54,6 @@ USERS_SCHEMA = "identity"  # users live in identity silo
 
 metadata = MetaData()
 
-# ── Users table (in identity silo) ──
 users_table = Table(
     "users",
     metadata,
@@ -75,7 +73,6 @@ users_table = Table(
     schema=USERS_SCHEMA,
 )
 
-# ── Questions table (in votes silo) ──
 questions_table = Table(
     "questions",
     metadata,
@@ -165,14 +162,12 @@ photos_table = Table(
 async def init_db(engine: AsyncEngine) -> None:
     """Create schemas and tables if they do not exist (idempotent)."""
     async with engine.begin() as conn:
-        # Ensure logical silos exist
         await conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {IDENTITY_SCHEMA}"))
         await conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {VOTES_SCHEMA}"))
         await conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {AUDIT_SCHEMA}"))
         await conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {PHOTOS_SCHEMA}"))
         await conn.run_sync(metadata.create_all)
 
-        # Seed default admin if users table is empty
         result = await conn.execute(select(users_table.c.id).limit(1))
         if result.first() is None:
             from app.auth import hash_password
@@ -186,7 +181,6 @@ async def init_db(engine: AsyncEngine) -> None:
                     full_name="Administrateur",
                 )
             )
-            # Seed default agent
             pw_hash2, salt2 = hash_password("agent")
             await conn.execute(
                 users_table.insert().values(
@@ -204,10 +198,9 @@ async def reset_db(engine: AsyncEngine) -> None:
     async with engine.begin() as conn:
         await conn.execute(
             text(
-                f"TRUNCATE TABLE {AUDIT_SCHEMA}.logs, {VOTES_SCHEMA}.votes, {IDENTITY_SCHEMA}.participants, {PHOTOS_SCHEMA}.photos RESTART IDENTITY CASCADE"
+                f"TRUNCATE TABLE {AUDIT_SCHEMA}.logs, {VOTES_SCHEMA}.questions, {VOTES_SCHEMA}.votes, {IDENTITY_SCHEMA}.participants, {PHOTOS_SCHEMA}.photos RESTART IDENTITY CASCADE"
             )
         )
-        # Also clear pooled connections if any (defensive with NullPool)
         await conn.commit()
 
 
@@ -246,7 +239,6 @@ async def record_vote(
         if q_check.first() is None:
             raise ValueError("Question invalide ou inactive")
 
-        # Upsert identity (participant_hash unique)
         stmt_identity = (
             insert(identities_table)
             .values(participant_hash=participant_hash, agent_hash=agent_hash)
@@ -370,7 +362,6 @@ async def verify_hash_chain(engine: AsyncEngine) -> dict:
     prev_payload = None
     for row in rows:
         if prev_payload is None:
-            # First entry may have prev_hash NULL
             prev_payload = row["payload_hash"]
             continue
         if row["prev_hash"] != prev_payload:
@@ -451,7 +442,6 @@ async def record_photo_metadata(
     }
 
 
-# ── User CRUD ──────────────────────────────────────
 
 async def get_user_by_username(engine: AsyncEngine, username: str) -> dict | None:
     """Fetch a user by username. Returns dict or None."""
@@ -531,7 +521,6 @@ async def delete_user(engine: AsyncEngine, user_id: int) -> bool:
         return result.rowcount > 0
 
 
-# ── Questions CRUD ─────────────────────────────────
 
 async def create_question(engine: AsyncEngine, *, question_id: str, label: str, created_by: str) -> dict:
     """Insert a new question. Returns the created question dict."""

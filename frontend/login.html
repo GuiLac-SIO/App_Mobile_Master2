@@ -174,7 +174,6 @@
             ? 'http://localhost:8080'
             : window.location.origin;
 
-        // If already logged in, redirect
         const token = localStorage.getItem('sv_token');
         const role = localStorage.getItem('sv_role');
         if (token) {

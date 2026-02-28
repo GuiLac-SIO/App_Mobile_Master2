@@ -14,12 +14,10 @@ async def check() -> dict:
 
     violations = []
 
-    # Le rôle NE DOIT PAS être superuser / createdb / createrole / replication
     for attr in ("rolsuper", "rolcreatedb", "rolcreaterole", "rolreplication"):
         if perms.get(attr):
             violations.append(f"Le rôle a le privilège interdit : {attr}")
 
-    # Le rôle DOIT pouvoir INSERT et SELECT sur votes et identities
     required_grants = {
         "can_insert_votes": "INSERT sur votes.votes",
         "can_select_votes": "SELECT sur votes.votes",

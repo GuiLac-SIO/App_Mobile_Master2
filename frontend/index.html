@@ -15,7 +15,6 @@
 </head>
 
 <body>
-    <!-- ───── Header ───── -->
     <header class="header">
         <div class="header-left">
             <span class="header-icon">🛡️</span>
@@ -30,7 +29,6 @@
         </div>
     </header>
 
-    <!-- ───── Step Indicator ───── -->
     <nav class="steps-nav">
         <div class="step active" data-step="1"><span class="step-num">1</span><span class="step-label">Question</span>
         </div>
@@ -40,10 +38,8 @@
         <div class="step" data-step="5"><span class="step-num">5</span><span class="step-label">Envoi</span></div>
     </nav>
 
-    <!-- ───── Main Content ───── -->
     <main id="mainContent">
 
-        <!-- Step 1: Scan Question QR -->
         <section id="step1" class="card step-card visible">
             <h2>📋 Scanner la question</h2>
             <p class="card-desc">Scannez le QR code de la question pré-enregistrée.</p>
@@ -59,7 +55,6 @@
             <button id="btnStep1Next" class="btn-primary" disabled>Suivant →</button>
         </section>
 
-        <!-- Step 2: Scan Participant QR -->
         <section id="step2" class="card step-card">
             <h2>👤 Scanner le participant</h2>
             <p class="card-desc">Scannez le QR code d'identification du participant.</p>
@@ -78,7 +73,6 @@
             </div>
         </section>
 
-        <!-- Step 3: Binary Vote -->
         <section id="step3" class="card step-card">
             <h2>🗳️ Enregistrer le vote</h2>
             <p class="card-desc">Le participant répond par <strong>Oui</strong> ou <strong>Non</strong>.</p>
@@ -102,7 +96,6 @@
             </div>
         </section>
 
-        <!-- Step 4: Photo Capture -->
         <section id="step4" class="card step-card">
             <h2>📸 Photo du participant</h2>
             <p class="card-desc">Prenez une photo du participant (pouce levé = oui, baissé = non).</p>
@@ -119,7 +112,6 @@
             </div>
         </section>
 
-        <!-- Step 5: Summary & Submit -->
         <section id="step5" class="card step-card">
             <h2>🔒 Résumé & envoi chiffré</h2>
             <p class="card-desc">Vérifiez les données avant transmission sécurisée.</p>
@@ -148,7 +140,6 @@
             </div>
         </section>
 
-        <!-- Success screen -->
         <section id="stepDone" class="card step-card">
             <div class="done-screen">
                 <span class="done-icon">✅</span>
@@ -159,11 +150,9 @@
         </section>
     </main>
 
-    <!-- ───── Footer ───── -->
     <footer class="footer">
         <span>Secure Votes v0.1 — Chiffrement Paillier · AES-256-GCM</span>
     </footer>
-    <!-- Auth check -->
     <script>
         (function () {
             const token = localStorage.getItem('sv_token');
@@ -178,7 +167,6 @@
             };
         })();
     </script>
-    <!-- ───── Scripts ───── -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="js/paillier.js"></script>
     <script src="js/crypto.js"></script>

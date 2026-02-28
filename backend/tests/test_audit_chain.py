@@ -4,7 +4,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy import update
 
-from app.db import audit_logs_table, get_engine, init_db, reset_db, verify_hash_chain
+from app.db import audit_logs_table, get_engine, init_db, reset_db, verify_hash_chain, create_question
 from app.main import app
 
 
@@ -13,6 +13,7 @@ async def test_audit_chain_ok():
     engine = get_engine()
     await init_db(engine)
     await reset_db(engine)
+    await create_question(engine, question_id="Q-audit", label="test", created_by="test")
 
     payload = {
         "question_id": "Q-audit",
@@ -37,8 +38,9 @@ async def test_audit_chain_detects_corruption():
     engine = get_engine()
     await init_db(engine)
     await reset_db(engine)
+    for i in range(2):
+        await create_question(engine, question_id=f"Q-corrupt-{i}", label="test", created_by="test")
 
-    # create two audit entries via two votes
     async with AsyncClient(app=app, base_url="http://test") as client:
         for i in range(2):
             payload = {
@@ -51,7 +53,6 @@ async def test_audit_chain_detects_corruption():
             resp = await client.post("/votes/send", json=payload)
             assert resp.status_code == 201
 
-    # corrupt the second audit entry's prev_hash
     async with engine.begin() as conn:
         await conn.execute(
             update(audit_logs_table)

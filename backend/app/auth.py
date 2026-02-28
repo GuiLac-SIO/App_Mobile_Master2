@@ -12,16 +12,13 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
-# ── Configuration ──────────────────────────────────
 JWT_SECRET = os.getenv("JWT_SECRET", secrets.token_hex(32))
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "480"))  # 8 heures
 
-# ── Rôles ──────────────────────────────────────────
 ROLES = {"agent", "admin", "auditor"}
 
 
-# ── Models ─────────────────────────────────────────
 class LoginRequest(BaseModel):
     username: str = Field(min_length=2, max_length=64)
     password: str = Field(min_length=4, max_length=128)
@@ -42,7 +39,6 @@ class TokenResponse(BaseModel):
     expires_in: int
 
 
-# ── Password hashing (SHA-256 + salt, pédagogique) ──
 def hash_password(password: str, salt: Optional[str] = None) -> tuple[str, str]:
     """Hash a password with a random salt. Returns (hash, salt)."""
     if salt is None:
@@ -57,7 +53,6 @@ def verify_password(password: str, pw_hash: str, salt: str) -> bool:
     return secrets.compare_digest(computed, pw_hash)
 
 
-# ── JWT (manual implementation, pédagogique) ────────
 import base64
 import json
 import hmac
@@ -113,7 +108,6 @@ def decode_token(token: str) -> Optional[dict]:
 
         payload = json.loads(_b64url_decode(parts[1]))
 
-        # Check expiration
         exp = payload.get("exp", 0)
         if datetime.now(timezone.utc).timestamp() > exp:
             return None

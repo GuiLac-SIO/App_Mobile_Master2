@@ -12,7 +12,6 @@ const QRScanner = (() => {
      * @returns {Promise<void>}
      */
     async function start(elementId, onSuccess) {
-        // Stop previous scanner on this element if any
         await stop(elementId);
 
         const scanner = new Html5Qrcode(elementId);
@@ -28,13 +27,11 @@ const QRScanner = (() => {
                 },
                 (decodedText) => {
                     onSuccess(decodedText);
-                    // Don't auto-stop — let the app control it
                 },
                 () => { } // ignore errors (no QR in frame)
             );
         } catch (err) {
             console.warn(`QR scanner couldn't start on ${elementId}:`, err);
-            // Camera not available — user can use manual input
         }
     }
 
@@ -51,7 +48,6 @@ const QRScanner = (() => {
                     await scanner.stop();
                 }
             } catch {
-                // Already stopped
             }
             try { scanner.clear(); } catch { }
             delete scanners[elementId];

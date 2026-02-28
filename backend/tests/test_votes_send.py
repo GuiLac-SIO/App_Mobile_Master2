@@ -12,6 +12,7 @@ from app.db import (
     init_db,
     reset_db,
     votes_table,
+    create_question,
 )
 from app.main import app
 
@@ -25,6 +26,7 @@ async def test_send_vote_stores_ciphertext_and_audit():
     participant = f"participant-{uuid.uuid4()}"
     agent = f"agent-{uuid.uuid4()}"
     question_id = "Q1"
+    await create_question(engine, question_id=question_id, label="test", created_by="test")
     ciphertext = "ciphertext-demo"
     key_id = "key-v1"
 

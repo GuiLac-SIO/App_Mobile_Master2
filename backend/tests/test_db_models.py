@@ -72,4 +72,3 @@ async def test_insert_and_read_separated_silos():
 
     assert audit_row["event_type"] == "test"
     assert audit_row["payload_hash"] == payload_hash
-    # prev_hash is None for first entry; later steps will chain

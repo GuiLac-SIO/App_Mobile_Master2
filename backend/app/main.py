@@ -41,12 +41,10 @@ from app.storage import ensure_bucket, get_bucket_name, get_s3_client, put_objec
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create engine at startup, dispose on shutdown
     engine = get_engine()
     await init_db(engine)
     ensure_bucket(get_s3_client())
     yield
-    # Do not dispose the cached engine here to avoid event-loop-closed errors in tests
 
 
 app = FastAPI(
@@ -55,7 +53,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# ── Security: CORS ───────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
@@ -65,7 +62,6 @@ app.add_middleware(
 )
 
 
-# ── Security: HTTP headers ───────────────────────────────────
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
     response: Response = await call_next(request)
@@ -118,7 +114,6 @@ async def health(database=Depends(verify_database)) -> dict:
     return {"status": "ok", "database": database["db"]}
 
 
-# ── JWT Auth dependency ─────────────────────────────────
 
 async def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
     """Extract and verify JWT token from Authorization header."""
@@ -142,7 +137,6 @@ def require_role(*roles):
     return checker
 
 
-# ── Auth endpoints ───────────────────────────────────
 
 @app.post("/auth/login")
 async def login(payload: LoginRequest, engine: AsyncEngine = Depends(get_engine)):
@@ -189,7 +183,6 @@ async def get_me(user: dict = Depends(get_current_user)):
     return {"user_id": user["sub"], "username": user["username"], "role": user["role"]}
 
 
-# ── Admin endpoints ──────────────────────────────────
 
 @app.get("/admin/stats")
 async def admin_stats(
@@ -207,7 +200,6 @@ async def admin_list_users(
 ):
     """List all users (admin only)."""
     users = await list_users(engine)
-    # Convert datetimes to strings for JSON
     for u in users:
         if u.get("created_at"):
             u["created_at"] = str(u["created_at"])
@@ -264,7 +256,6 @@ async def admin_delete_user(
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
     return {"status": "deleted", "user_id": user_id}
 
-# ── Questions endpoints ───────────────────────────────
 
 class QuestionRequest(BaseModel):
     question_id: str = Field(min_length=1, max_length=64)
@@ -405,7 +396,6 @@ async def audit_logs(limit: int = Query(default=50, ge=1, le=200), engine: Async
     return await fetch_audit_logs(engine, limit=limit)
 
 
-# ── Crypto endpoints (for client-side integration) ───────────
 
 
 class EncryptRequest(BaseModel):

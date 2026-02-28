@@ -6,7 +6,6 @@
 (function () {
     'use strict';
 
-    // ── State ──────────────────────────────────────
     const state = {
         questionId: null,
         participantId: null,
@@ -23,12 +22,10 @@
     const OFFLINE_QUEUE_KEY = 'secureVotes_offlineQueue';
     let currentStep = 1;
 
-    // ── DOM refs ───────────────────────────────────
     const $ = (sel) => document.querySelector(sel);
     const steps = [null, $('#step1'), $('#step2'), $('#step3'), $('#step4'), $('#step5')];
     const stepDone = $('#stepDone');
 
-    // ── Init ───────────────────────────────────────
     init();
 
     async function init() {
@@ -39,7 +36,6 @@
         showStep(1);
     }
 
-    // ── Paillier key ───────────────────────────────
     async function loadPaillierKey() {
         try {
             state.paillierKey = await API.fetchPublicKey();
@@ -49,7 +45,6 @@
         }
     }
 
-    // ── Geolocation ────────────────────────────────
     function getGeolocation() {
         if ('geolocation' in navigator) {
             navigator.geolocation.getCurrentPosition(
@@ -63,7 +58,6 @@
         }
     }
 
-    // ── Step navigation ────────────────────────────
     function showStep(n) {
         currentStep = n;
         steps.forEach((el, i) => {
@@ -71,7 +65,6 @@
         });
         stepDone.classList.remove('visible');
 
-        // Update step indicators
         document.querySelectorAll('.steps-nav .step').forEach((el) => {
             const s = parseInt(el.dataset.step);
             el.classList.remove('active', 'done');
@@ -79,7 +72,6 @@
             else if (s < n) el.classList.add('done');
         });
 
-        // Start/stop QR scanners
         if (n === 1) startQuestionScanner();
         else QRScanner.stop('qr-reader-question');
 
@@ -92,16 +84,13 @@
         if (n === 5) populateSummary();
     }
 
-    // ── Event listeners ────────────────────────────
     function setupEventListeners() {
-        // Step 1 – Question
         $('#manualQuestionId').addEventListener('input', (e) => {
             const val = e.target.value.trim();
             if (val) setQuestion(val);
         });
         $('#btnStep1Next').addEventListener('click', () => showStep(2));
 
-        // Step 2 – Participant
         $('#manualParticipantId').addEventListener('input', (e) => {
             const val = e.target.value.trim();
             if (val) setParticipant(val);
@@ -109,27 +98,22 @@
         $('#btnStep2Back').addEventListener('click', () => showStep(1));
         $('#btnStep2Next').addEventListener('click', () => showStep(3));
 
-        // Step 3 – Vote
         $('#voteYes').addEventListener('click', () => setVote(1));
         $('#voteNo').addEventListener('click', () => setVote(0));
         $('#btnStep3Back').addEventListener('click', () => showStep(2));
         $('#btnStep3Next').addEventListener('click', () => showStep(4));
 
-        // Step 4 – Photo
         $('#btnCapture').addEventListener('click', capturePhoto);
         $('#btnRetake').addEventListener('click', retakePhoto);
         $('#btnStep4Back').addEventListener('click', () => showStep(3));
         $('#btnStep4Next').addEventListener('click', () => showStep(5));
 
-        // Step 5 – Submit
         $('#btnStep5Back').addEventListener('click', () => showStep(4));
         $('#btnSubmit').addEventListener('click', submitData);
 
-        // Done
         $('#btnNewCollect').addEventListener('click', resetWorkflow);
     }
 
-    // ── Step 1: Question QR ────────────────────────
     function startQuestionScanner() {
         QRScanner.start('qr-reader-question', (text) => {
             setQuestion(text);
@@ -165,7 +149,6 @@
         }
     }
 
-    // ── Step 2: Participant QR ─────────────────────
     function startParticipantScanner() {
         QRScanner.start('qr-reader-participant', (text) => {
             setParticipant(text);
@@ -181,7 +164,6 @@
         $('#btnStep2Next').disabled = false;
     }
 
-    // ── Step 3: Vote ───────────────────────────────
     function setVote(value) {
         state.vote = value;
         $('#voteYes').classList.toggle('selected', value === 1);
@@ -191,7 +173,6 @@
         $('#btnStep3Next').disabled = false;
     }
 
-    // ── Step 4: Photo ──────────────────────────────
     let cameraStream = null;
 
     async function startCamera() {
@@ -247,7 +228,6 @@
         startCamera();
     }
 
-    // ── Step 5: Summary & Submit ───────────────────
     async function populateSummary() {
         state.timestamp = new Date().toISOString();
 
@@ -259,7 +239,6 @@
         $('#sumGeo').textContent = state.geo || 'Non disponible';
         $('#sumAgent').textContent = state.agentId;
 
-        // Encrypt vote with Paillier (client-side)
         try {
             if (state.paillierKey) {
                 state.voteCiphertext = Paillier.encrypt(
@@ -276,7 +255,6 @@
             $('#sumCiphertext').textContent = '(erreur)';
         }
 
-        // Encrypt photo with AES-256-GCM (client-side)
         if (state.photoBlob) {
             try {
                 state.photoEncrypted = await PhotoCrypto.encryptPhoto(state.photoBlob);
@@ -300,7 +278,6 @@
         $result.style.display = 'none';
 
         try {
-            // 1. Send encrypted vote
             const ciphertext = state.voteCiphertext || state.vote.toString();
             const voteResp = await API.sendVote({
                 question_id: state.questionId,
@@ -310,7 +287,6 @@
                 key_id: state.paillierKey ? state.paillierKey.key_id : 'key-v1',
             });
 
-            // 2. Upload encrypted photo
             let photoResp = null;
             if (state.photoEncrypted) {
                 const enc = state.photoEncrypted;
@@ -335,7 +311,6 @@
         } catch (err) {
             console.error('Submit error:', err);
 
-            // Offline mode: queue for later
             if (!navigator.onLine) {
                 saveToOfflineQueue();
                 $result.style.display = 'flex';
@@ -350,7 +325,6 @@
         $btn.textContent = '🚀 Transmettre au serveur';
     }
 
-    // ── Offline mode ───────────────────────────────
     function saveToOfflineQueue() {
         const queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
         queue.push({
@@ -399,7 +373,6 @@
         }
     }
 
-    // ── Online/offline monitoring ──────────────────
     function monitorOnlineStatus() {
         const badge = $('#onlineStatus');
 
@@ -420,7 +393,6 @@
         updatePendingBadge();
     }
 
-    // ── Reset ──────────────────────────────────────
     function resetWorkflow() {
         state.questionId = null;
         state.participantId = null;
@@ -430,7 +402,6 @@
         state.voteCiphertext = null;
         state.timestamp = null;
 
-        // Reset UI
         $('#questionResult').style.display = 'none';
         $('#participantResult').style.display = 'none';
         $('#voteResult').style.display = 'none';

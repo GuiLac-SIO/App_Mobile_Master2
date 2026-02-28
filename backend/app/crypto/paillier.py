@@ -25,7 +25,6 @@ class PrivateKey:
         return self.n * self.n
 
 
-# --- Utilities ---
 
 def _lcm(a: int, b: int) -> int:
     return abs(a * b) // math.gcd(a, b)
@@ -40,7 +39,6 @@ def _is_probable_prime(n: int, rounds: int = 16) -> bool:
     if any((n % p) == 0 for p in small_primes):
         return False
 
-    # Miller-Rabin
     d = n - 1
     s = 0
     while d % 2 == 0:
@@ -68,7 +66,6 @@ def _generate_prime(bits: int) -> int:
             return candidate
 
 
-# --- Key generation ---
 
 def generate_keypair(bits: int = 256) -> Tuple[PublicKey, PrivateKey]:
     p = _generate_prime(bits // 2)
@@ -83,7 +80,6 @@ def generate_keypair(bits: int = 256) -> Tuple[PublicKey, PrivateKey]:
     return PublicKey(n=n, g=g), PrivateKey(lam=lam, mu=mu, n=n)
 
 
-# --- Core operations ---
 
 def encrypt(pub: PublicKey, m: int, r: int | None = None) -> int:
     if not 0 <= m < pub.n:

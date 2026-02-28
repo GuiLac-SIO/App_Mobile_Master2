@@ -34,15 +34,12 @@ def main():
     print("=" * 60)
     print()
 
-    # Run async DB checks
     async_results = asyncio.run(run_async_checks())
 
-    # Run sync checks
     network_result = check_network()
 
     all_results = async_results + [network_result]
 
-    # Display results
     passed = 0
     failed = 0
     for r in all_results:
@@ -71,7 +68,6 @@ def main():
     else:
         print("  🎉 Tous les audits sont passés avec succès")
 
-    # Export JSON report
     report = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "summary": {"total": total, "passed": passed, "failed": failed},
